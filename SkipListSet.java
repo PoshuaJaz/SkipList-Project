@@ -1,43 +1,57 @@
-package SkipList;
+  package SkipList;
 
-import java.util.*; // Import all java.util classes to cover required interfaces
+import java.util.*;
 
 public class SkipListSet<T extends Comparable<T>> implements SortedSet<T> {
-	final public static int NEG_INF = Integer.MIN_VALUE;
-	final public static int POS_INF = Integer.MAX_VALUE;
-	
-	
-	private SkipListSetItem head; // Sentinel node at the lowest level
+	//final public static int NEG_INF = Integer.MIN_VALUE;
+	//final public static int POS_INF = Integer.MAX_VALUE;
+	public static Random randObj = new Random();
+		
+	private SkipListSetItem head;
+	private SkipListSetItem tail;
 	private int level;
-	private Random rand;
+
 	
 	// Item-wrapper class
 	private class SkipListSetItem {
-		T payload;
+		T data;
+		boolean isSentinel;
 		SkipListSetItem left, right, up, down;
 		
 		// Creates a node item for SkipList
-		public SkipListSetItem(T nPayload) {
-			this.payload = nPayload;
+		public SkipListSetItem(T nData) {
+			this.data = nData;
 			this.left = null;
 			this.right = null;
 			this.up =  null;
 			this.down = null;
-		}		
+			this.isSentinel = false;
+		}
+		
+		// Creates min/max infinity node.
+		public SkipListSetItem(boolean flag) {
+			this.data = null;
+			this.left = null;
+			this.right = null;
+			this.up =  null;
+			this.down = null;
+			this.isSentinel = flag;
+		}
 	} // End of SkipListSetItem
 	
-    // Traverses the skipList's items (nodes).
-	// private SkipListSetItem traverse(T target) - REMOVE LATER
-    private SkipListSetItem traverse() {
+    // Traverses the skiplist's items (nodes).
+    private SkipListSetItem traverse(T source) {
+    	
     	SkipListSetItem current = head;
     	
     	// Traverse through the BASE level
-    	while(current != null) {
+    	while(current.right != null && !current.right.isSentinel && 
+    			current.right.data.compareTo(source) < 0) {
     		current = current.right;
     	}
     	
     	return current;
-    }
+    } // End of traverse method
 	
     // Internal iterator class for the SkipListSet
     private class SkipListSetIterator<T extends Comparable<T>> implements Iterator<T> {
@@ -58,9 +72,13 @@ public class SkipListSet<T extends Comparable<T>> implements SortedSet<T> {
     
 	// Constructor - No Argument
     public SkipListSet() {
-    	this.head = new SkipListSetItem(null);
+    	this.head = new SkipListSetItem(true);
+    	this.tail = new SkipListSetItem(true);
+    	
+    	this.head.right = this.tail;
+    	this.tail.left = this.head;
+
     	this.level = 0;
-    	this.rand = new Random();
     } // End of Constructor 
     
     // Constructor with Collection Argument
@@ -72,6 +90,27 @@ public class SkipListSet<T extends Comparable<T>> implements SortedSet<T> {
     } // End of Constructor
 
     // METHODS
+    public String toString() {
+    	StringBuffer sb = new StringBuffer();
+    	SkipListSetItem current = head.right;
+    	while(current != null && !current.isSentinel ) {
+    		System.out.print(current.data + " ");
+    		current = current.right;
+    	}
+    	return sb.toString();
+    } // End of toString method
+    
+    public String printReverse() {
+    	StringBuffer sb = new StringBuffer();
+    	SkipListSetItem current = tail.left;
+    	while(current != null && !current.isSentinel ) {
+    		System.out.print(current.data + " ");
+    		current = current.left;
+    	}
+    	return sb.toString();
+    	
+    } // End of printReverse method
+    
 	@Override
 	public int size() {
 		// TODO Auto-generated method stub
@@ -111,16 +150,22 @@ public class SkipListSet<T extends Comparable<T>> implements SortedSet<T> {
 
 	@Override
 	public boolean add(T newVal) {
-		SkipListSetItem prev = traverse();
+		SkipListSetItem prev = traverse(newVal);
 		SkipListSetItem newNode = new SkipListSetItem(newVal);
-		if(prev == null) {
-			
+		
+		newNode.right = prev.right;
+		newNode.left = prev;
+		
+		if(prev.right != null) {
+			prev.right.left = newNode;
 		}
 		
 		prev.right = newNode;
-		newNode.left = prev;
 		
-		return false;
+		if(newNode.right == tail) {
+			tail.left = newNode;
+		}		
+		return true;
 	}
 
 	// Suppress unchecked cast warning
